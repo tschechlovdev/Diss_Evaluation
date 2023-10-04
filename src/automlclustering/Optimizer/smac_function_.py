@@ -43,10 +43,10 @@ def smac_function(config, optimizer_instance, **kwargs):
 
     # We are in the learning phase and thus want to calculate all CVIs
     # Actually, we should do this in the LearningPhase script!
+    else:
+        int_cvis = CVICollection.internal_cvis
+        for int_cvi in int_cvis:
+            int_cvi_score = int_cvi.score_cvi(X, labels=y)
+            add_info[int_cvi.get_abbrev()] = int_cvi_score
 
-    # TODO: For Learning Phase of AutoClust/ AutoCluster we don't need other CVIs
-    # int_cvis = CVICollection.internal_cvis
-    # for int_cvi in int_cvis:
-    #     int_cvi_score = int_cvi.score_cvi(X, labels=y)
-    #     add_info[int_cvi.get_abbrev()] = int_cvi_score
     return score, add_info

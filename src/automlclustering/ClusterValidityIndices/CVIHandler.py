@@ -122,7 +122,7 @@ def density_based_score(X, labels):
     print(X.shape)
 
     # Does not work for MNIST with n=40k (784 features)
-    if X.shape[0] >= 40000 and X.shape[1] > 100:
+    if X.shape[0] >= 40000 and X.shape[1] >= 100:
         print(f"Cannot process data with shape {X.shape}")
         print(f"Return default value {2147483647}")
         return 2147483647

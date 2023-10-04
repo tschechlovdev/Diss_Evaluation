@@ -6,6 +6,7 @@ from ConfigSpace.conditions import InCondition
 from ConfigSpace.configuration_space import Configuration, ConfigurationSpace
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, Hyperparameter, UniformIntegerHyperparameter, \
     UniformFloatHyperparameter
+from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans, MiniBatchKMeans, AgglomerativeClustering, Birch, SpectralClustering, DBSCAN, \
     MeanShift, estimate_bandwidth, AffinityPropagation
 from sklearn.mixture import GaussianMixture
@@ -64,6 +65,7 @@ class ClusteringAlgorithm:
                 n_clusters = config_dict.pop("n_clusters")
                 labels = self.algorithm_class(n_components=n_clusters, **config_dict,
                                               **additional_algorithm_args).fit_predict(X)
+
             else:
                 algorithm_instance = self.algorithm_class(**config_dict, **additional_algorithm_args)
                 labels = algorithm_instance.fit_predict(X)
@@ -102,7 +104,8 @@ AFFINITY_PROPAGATION_ALGORITHM = "affinity_propagation"
 algorithms = [KMEANS_ALGORITHM, GMM_ALGORITHM,
               # KMEDOIDS,
               MINI_BATCH_KMEANS, HIERARCHICAL_CLUSTERING_ALGORITHM, DBSCAN_ALGORITHM, BIRCH_ALGORITHM,
-              SPECTRAL_ALGORITHM, MEAN_SHIFT_ALGORITHM, AFFINITY_PROPAGATION_ALGORITHM]
+              SPECTRAL_ALGORITHM,# MEAN_SHIFT_ALGORITHM,
+              AFFINITY_PROPAGATION_ALGORITHM]
 
 k_range = (2, 100)
 min_samples_range = (2, 200)
@@ -116,7 +119,8 @@ eps_range = (0, 1)
 quantile_range = (0.1, 1.0)
 damping_range = (0.5, 1.0)
 
-n_clusters_algorithms = [KMEANS_ALGORITHM, MINI_BATCH_KMEANS, GMM_ALGORITHM, SPECTRAL_ALGORITHM, BIRCH_ALGORITHM,
+n_clusters_algorithms = [KMEANS_ALGORITHM, MINI_BATCH_KMEANS, GMM_ALGORITHM,
+                         SPECTRAL_ALGORITHM, BIRCH_ALGORITHM,
                          HIERARCHICAL_CLUSTERING_ALGORITHM]
 
 eps_hyperparameter = UniformFloatHyperparameter("eps", lower=eps_range[0],
@@ -164,6 +168,7 @@ ALL_PARAMETERS = [eps_hyperparameter, min_samples_hyperparameter, quantile_hyper
 
 ################ Definition of algorithms and their hyperparameters #################################################
 ### todo: maybe adjust additional kwargs
+### TODO: Activate hyperparameters again when running the learning phase again
 ALGORITHMS_MAP = {KMEANS_ALGORITHM: ClusteringAlgorithm(name=KMEANS_ALGORITHM, algorithm_class=KMeans,
                                                         parameters=[n_clusters_hyperparameter],
                                                         additional_kwargs={"n_init": 1,
@@ -177,13 +182,15 @@ ALGORITHMS_MAP = {KMEANS_ALGORITHM: ClusteringAlgorithm(name=KMEANS_ALGORITHM, a
                   HIERARCHICAL_CLUSTERING_ALGORITHM: ClusteringAlgorithm(name=HIERARCHICAL_CLUSTERING_ALGORITHM,
                                                                          algorithm_class=AgglomerativeClustering,
                                                                          parameters=[n_clusters_hyperparameter,
-                                                                                     linkage_hp]),
+                                                                                     linkage_hp
+                                                                                     ]),
                   BIRCH_ALGORITHM: ClusteringAlgorithm(name=BIRCH_ALGORITHM, algorithm_class=Birch,
                                                        parameters=[n_clusters_hyperparameter]),
                   SPECTRAL_ALGORITHM: ClusteringAlgorithm(name=SPECTRAL_ALGORITHM, algorithm_class=SpectralClustering,
                                                           parameters=[n_clusters_hyperparameter,
                                                                       eigensolver_hyperparameter,
-                                                                      assign_labels_hyperparameter],
+                                                                      assign_labels_hyperparameter
+                                                                      ],
                                                           additional_kwargs={"n_init": 1,
                                                                              "n_jobs": 1,
                                                                              "affinity": "nearest_neighbors",
@@ -193,11 +200,11 @@ ALGORITHMS_MAP = {KMEANS_ALGORITHM: ClusteringAlgorithm(name=KMEANS_ALGORITHM, a
                                                         parameters=[eps_hyperparameter, min_samples_hyperparameter],
                                                         additional_kwargs={  # 'leaf_size': 2,
                                                             'algorithm': 'ball_tree'}),
-                  MEAN_SHIFT_ALGORITHM: ClusteringAlgorithm(name=MEAN_SHIFT_ALGORITHM, algorithm_class=MeanShift,
-                                                            parameters=[quantile_hyperparameter],
-                                                            additional_kwargs={"max_iter": MAX_ITERATIONS,
-                                                                               # "n_jobs": -1
-                                                                               }),
+                  # MEAN_SHIFT_ALGORITHM: ClusteringAlgorithm(name=MEAN_SHIFT_ALGORITHM, algorithm_class=MeanShift,
+                  #                                           parameters=[quantile_hyperparameter],
+                  #                                           additional_kwargs={"max_iter": MAX_ITERATIONS,
+                  #                                                              # "n_jobs": -1
+                  #                                                              }),
                   AFFINITY_PROPAGATION_ALGORITHM: ClusteringAlgorithm(name=AFFINITY_PROPAGATION_ALGORITHM,
                                                                       algorithm_class=AffinityPropagation,
                                                                       parameters=[damping_hyperparameter],
@@ -241,8 +248,8 @@ def build_partitional_dim_reduction_space(n_samples=1000, n_features=10):
                               partitional=True)
 
 
-def build_all_algos_space(n_samples=None, n_features=None, k_range=k_range):
-    return build_config_space(clustering_algorithms=algorithms, partitional=False, k_range=k_range)
+def build_all_algos_space(n_samples=None, n_features=None, k_range=k_range, X_shape=None):
+    return build_config_space(clustering_algorithms=algorithms, partitional=False, k_range=k_range, X_shape=X_shape)
 
 
 def build_config_space(clustering_algorithms=algorithms,

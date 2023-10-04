@@ -15,8 +15,8 @@ from pymfe.mfe import MFE
 from sklearn.cluster import MeanShift
 from sklearn.neighbors._kd_tree import KDTree
 
-from ClusterValidityIndices.CVIHandler import CVICollection
-from Helper.Helper import mf_set_to_string, hopkins
+from automlclustering.ClusterValidityIndices.CVIHandler import CVICollection
+from automlclustering.Helper.Helper import mf_set_to_string, hopkins
 
 logging.basicConfig(filename='metafeatures.log',
                     level=logging.INFO,
@@ -110,8 +110,9 @@ def extract_all_datasets(datasets, path=Path(''), mf_Set='statistical', d_names=
         df = pd.DataFrame()
     print(df)
     for X, d_name in zip(datasets, d_names):
-        if d_name in df["dataset"].unique():
+        if len(df) > 0 and d_name in df["dataset"].unique():
             print(f"Meta-features for {d_name} already extracted - continue!")
+            print(df[df["dataset"] == d_name])
             continue
         print(f"extracting metafeatures {mf_Set} from dataset {d_name}")
         names, scores = extract_meta_features(X, mf_Set)

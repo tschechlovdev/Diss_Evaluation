@@ -10,21 +10,20 @@ from scipy.stats import spearmanr
 from sklearn import preprocessing
 from sklearn.ensemble import RandomForestClassifier
 
-from ClusterValidityIndices.CVIHandler import CVICollection
-from ClusteringCS import ClusteringCS
-from MetaLearningExperiments import DataGeneration
-from MetaLearning import MetaFeatureExtractor
-from MetaLearning.MetaFeatureExtractor import extract_all_datasets
-from Optimizer.OptimizerSMAC import SMACOptimizer
+from automlclustering.ClusterValidityIndices.CVIHandler import CVICollection
+from automlclustering.ClusteringCS import ClusteringCS
+from automlclustering.MetaLearningExperiments import DataGeneration
+from automlclustering.MetaLearning import MetaFeatureExtractor
+from automlclustering.MetaLearning.MetaFeatureExtractor import extract_all_datasets
+from automlclustering.Optimizer.OptimizerSMAC import SMACOptimizer
 from automlclustering.Helper import Helper
 from automlclustering.Helper.Helper import mf_set_to_string
+from effens.Utils.Utils import clean_up_optimizer_directory, get_n_from_dataset
 
 # Has to be adjusted according to your working directory!
 # mkr_path = Path("src/EffEnsMKR")
-mkr_path = Path("./")
 evaluated_configs_filename = "evaluated_configs.csv"
-optimal_metric_file_name = "optimal_metric.csv"
-meta_feature_path = "meta_features"
+optimal_metric_file_name = "optimal_cvi.csv"
 
 # Preparation, datasets to use and meta-features
 meta_feature_sets = MetaFeatureExtractor.meta_feature_sets
@@ -66,7 +65,7 @@ def get_best_cvi_for_dataset(meta_knowledge, dataset, n_top_results=None):
         else:
             top_cvi_configs = meta_knowledge_for_data
 
-        ari_values = top_cvi_configs["ARI"].to_numpy()
+        ari_values = top_cvi_configs["AMI"].to_numpy()
         cvi_values = top_cvi_configs[cvi.get_abbrev()].to_numpy()
         corr, _ = spearmanr(ari_values, cvi_values, nan_policy='omit')
         correlation_by_metric[cvi.get_abbrev()] = corr
@@ -80,34 +79,55 @@ def get_best_cvi_for_dataset(meta_knowledge, dataset, n_top_results=None):
     return best_cvi, best_corr, correlation_by_metric
 
 
-def select_best_cvi():
+# TODO: We might test instead of ranking to select the CVI with best AMI value (what about ties?)
+def select_best_cvi(mkr_path, ranking=True):
     """
     Determines the best metric for each dataset and stores the result in a csv file.
     :return: dataset_optimal_cvi: pd.DataFrame that contains for each dataset the metric that is best suited.
     """
     evaluated_configs = pd.read_csv(mkr_path / evaluated_configs_filename, index_col=0)
-    dataset_optimal_cvi = pd.DataFrame(columns=["metric", "dataset", "correlations"])
+    dataset_optimal_cvi = pd.DataFrame(columns=["cvi", "dataset", "correlations"])
 
     for dataset in evaluated_configs["dataset"].unique():
-        best_cvi, best_corr, correlation_by_metric = get_best_cvi_for_dataset(evaluated_configs, dataset)
+        if ranking:
+            best_cvi, best_corr, correlation_by_metric = get_best_cvi_for_dataset(evaluated_configs, dataset)
+
+        else:
+            ec_dataset = evaluated_configs[evaluated_configs["dataset"] == dataset]
+            best_cvi = ""
+            best_ami_cvi = np.infty
+            ami_per_cvi = {}
+            for cvi in CVICollection.internal_cvis:
+                cvi = cvi.get_abbrev()
+                ami_value = ec_dataset[ec_dataset[cvi] == ec_dataset[cvi].min()]["AMI"].min()
+                if ami_value < best_ami_cvi:
+                    best_ami_cvi = ami_value
+                    best_cvi = cvi
+                ami_per_cvi[cvi] = best_ami_cvi
+
+            correlation_by_metric = ami_per_cvi
+
         print(f"best cvi for {dataset} is: {best_cvi}")
-        dataset_optimal_cvi = dataset_optimal_cvi.append(
-            {"metric": best_cvi, "dataset": dataset, "correlations": correlation_by_metric}, ignore_index=True)
+        dataset_optimal_cvi = pd.concat([dataset_optimal_cvi,
+                                         pd.DataFrame([{"cvi": best_cvi, "dataset": dataset,
+                                                        "correlations": correlation_by_metric}])],
+                                        ignore_index=True)
 
     dataset_optimal_cvi.to_csv(mkr_path / optimal_metric_file_name)
     return dataset_optimal_cvi
 
 
-def train_model_not_for_dataset(dataset, mf_set, name_meta_feature_set, optimal_cvi, prediction_cols, classifier):
+def train_model_not_for_dataset(dataset, mf_set, name_meta_feature_set, optimal_cvi, prediction_cols, classifier,
+                                mkr_path, random_state=1234):
     # Prepare Training data for this dataset (i.e. all datasets except this dataset)
     mf_set_for_dataset = mf_set[mf_set["dataset"] != dataset]
     optimal_cvi_for_dataset = optimal_cvi[optimal_cvi["dataset"] != dataset]
     X = mf_set_for_dataset[prediction_cols]
     X = np.nan_to_num(X, 0)
-    y = optimal_cvi_for_dataset["metric"].to_numpy()
+    y = optimal_cvi_for_dataset["cvi"].to_numpy()
 
     # instantiate and train classifier
-    classifier_instance = classifier()
+    classifier_instance = classifier(random_state=random_state)
     model_name = Helper.get_model_name(classifier_instance)
     classifier_instance.fit(X, y)
 
@@ -116,9 +136,11 @@ def train_model_not_for_dataset(dataset, mf_set, name_meta_feature_set, optimal_
     classifier_directory.mkdir(exist_ok=True, parents=True)
     with open(f'{classifier_directory}/{dataset}', 'wb') as f:
         joblib.dump(classifier_instance, f)
+        return classifier_instance
 
 
-def train_classifier(classifier=RandomForestClassifier):
+def train_classifier(mkr_path, classifier=RandomForestClassifier, mf_set=MetaFeatureExtractor.meta_feature_sets[5],
+                     random_state=1234):
     """
     Trains a classifier on the meta-features as X and the best metric for the according dataset are the labels.
     The classifier can be used to predict for new datasets, based on their meta-features, the best CVI.
@@ -130,38 +152,48 @@ def train_classifier(classifier=RandomForestClassifier):
     """
     optimal_cvi = pd.read_csv(mkr_path / optimal_metric_file_name)
 
-    for name_meta_feature_set in MetaFeatureExtractor.meta_feature_sets:
-        name_meta_feature_set = mf_set_to_string(name_meta_feature_set)
-        mf_set = pd.read_csv(f"{mkr_path}/{meta_feature_path}/{name_meta_feature_set}_metafeatures.csv", index_col=0)
-        mf_set['dataset'] = pd.Categorical(mf_set['dataset'], optimal_cvi["dataset"])
-        mf_set = mf_set.sort_values("dataset")
-        prediction_cols = [col for col in mf_set.columns if col not in ["dataset", "mfe"]]
+    meta_feature_path = mkr_path / "meta_features"
 
-        for dataset in optimal_cvi["dataset"].unique():
-            # Train a classification model for each dataset --> This simulates the dataset that we use in the
-            # application phase
-            train_model_not_for_dataset(dataset, mf_set, name_meta_feature_set, optimal_cvi, prediction_cols,
-                                        classifier)
+    name_meta_feature_set = mf_set_to_string(mf_set)
+    mf_set = pd.read_csv(f"{meta_feature_path}/{name_meta_feature_set}_metafeatures.csv")
 
-        # Train a model for all datasets
-        # We use this for "new" application phases
-        train_model_not_for_dataset(dataset=None, mf_set=mf_set, name_meta_feature_set=name_meta_feature_set,
-                                    optimal_cvi=optimal_cvi, prediction_cols=prediction_cols, classifier=classifier)
+    mf_set['dataset'] = pd.Categorical(mf_set['dataset'], optimal_cvi["dataset"])
+    mf_set = mf_set.sort_values("dataset")
+    prediction_cols = [col for col in mf_set.columns if col not in ["dataset", "mfe"]]
+
+    # Train a model for all datasets
+    # We use this for "new" application phases
+    clf = train_model_not_for_dataset(dataset=None, mf_set=mf_set, name_meta_feature_set=name_meta_feature_set,
+                                      optimal_cvi=optimal_cvi, prediction_cols=prediction_cols,
+                                      classifier=classifier,
+                                      mkr_path=mkr_path, random_state=random_state)
+    return clf
 
 
-def evalute_configurations(n_loops, time_limit, datasets, dataset_names, dataset_labels):
-    evaluated_configs_df = pd.DataFrame()
+def evalute_configurations(n_loops, time_limit, datasets, dataset_names, dataset_labels, mkr_path,
+                           skip_existing_results=True):
+    if (mkr_path / evaluated_configs_filename).is_file():
+        print(f"got file {mkr_path / evaluated_configs_filename} - skipping results if possible")
+        evaluated_configs_df = pd.read_csv(mkr_path / evaluated_configs_filename)
+    else:
+        evaluated_configs_df = pd.DataFrame()
 
     for X, y, dataset_name in zip(datasets, dataset_labels, dataset_names):
         sys.stdout.flush()
         print("-------------------")
         print(f"Running on dataset: {dataset_name}")
 
+        if skip_existing_results and "dataset" in evaluated_configs_df.columns:
+            if dataset_name in evaluated_configs_df["dataset"].unique():
+                print(f"Result for {dataset_name} already existing - skipping")
+                continue
+            else:
+                print(f"Result for {dataset_name} does not exist yet")
         # min_max_scaler = preprocessing.MinMaxScaler()
         # X = min_max_scaler.fit_transform(X)
 
         # we build a config space with the hyperparameters for each algorithm separately
-        cs_all_algos = ClusteringCS.build_all_algos_space()
+        cs_all_algos = ClusteringCS.build_all_algos_space(X_shape=X.shape)
         opt_result_df = pd.DataFrame()
 
         # RunOptimizationProcedure
@@ -179,27 +211,32 @@ def evalute_configurations(n_loops, time_limit, datasets, dataset_names, dataset
 
         # save after each execution of algorithm for each dataset --> Can have intermediate results if one run crashes
         evaluated_configs_df.to_csv(mkr_path / evaluated_configs_filename, index=False)
+        clean_up_optimizer_directory(optimizer_instance=opt_instance)
         print(f"Finished dataset: {dataset_name}")
-        print(f"Finished dataset number {dataset_names.index(dataset_name)}/{len(dataset_names)}")
+        # print(f"Finished dataset number {dataset_names.index(dataset_name)}/{len(dataset_names)}")
         print("---------------------------------")
 
 
 def run_learning_phase(training_datasets, training_data_labels, training_dataset_names, n_loops=100,
-                       time_limit=120 * 60, mf_path=meta_feature_path,
-                       mf_set="statistical", skip_mf_extraction=False):
+                       time_limit=120 * 60, mf_set="statistical", skip_mf_extraction=False,
+                       mkr_path=Path("")):
     """
     Runs learning phase of our approach
     :param extract_mfs: Boolean, whether to extract the meta-features or not
     :param n_loops: number of optimizer loops to perform for each dataset
     :param time_limit: Time limit of the optimization procedure. The default is two hours
     :param mf_path: Path where to store the meta-features
+
+    Args:
+        mkr_path:
     """
+    meta_feature_path = mkr_path / "meta_features"
 
     #########################################################################################################
     # L1: ExtractMeta-features
     if not skip_mf_extraction:
         print(training_dataset_names)
-        extract_all_datasets(datasets=training_datasets, path=mf_path,
+        extract_all_datasets(datasets=training_datasets, path=meta_feature_path,
                              mf_Set=mf_set,
                              d_names=training_dataset_names,
                              save_metafeatures=True)
@@ -211,17 +248,18 @@ def run_learning_phase(training_datasets, training_data_labels, training_dataset
                            time_limit=time_limit,
                            datasets=training_datasets,
                            dataset_names=training_dataset_names,
-                           dataset_labels=training_data_labels)
+                           dataset_labels=training_data_labels,
+                           mkr_path=mkr_path)
     #########################################################################################################
 
     #########################################################################################################
     # L3: Select Best CVI
-    # select_best_cvi()
+    select_best_cvi(mkr_path=mkr_path)
     #########################################################################################################
 
     #########################################################################################################
     # L4: Train Classification Model
-    # train_classifier()
+    train_classifier(mkr_path)
     #########################################################################################################
 
     print("Finished Learning Phase!")

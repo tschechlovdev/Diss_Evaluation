@@ -38,7 +38,7 @@ def DBCV(X, labels, dist_function=euclidean):
         return 2
 
     print(X.shape)
-    if X.shape[0] >= 1 and X.shape[1] > 100:
+    if X.shape[0] >= 40000 and X.shape[1] > 100:
         print(f"Cannot process data with shape {X.shape}")
         print(f"Return default value {np.infty}")
         return np.infty

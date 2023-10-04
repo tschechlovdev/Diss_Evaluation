@@ -98,7 +98,7 @@ class AbstractOptimizer(ABC):
         if output_dir:
             self.output_dir = output_dir
         else:
-            self.output_dir = f"./smac/{self.get_abbrev()}/"
+            self.output_dir = f"./smac/{self.get_abbrev()}/{uuid.uuid4()}"
 
         if not cvi:
             self.cvi = CVICollection.CALINSKI_HARABASZ
@@ -213,7 +213,9 @@ class SMACOptimizer(AbstractOptimizer):
                              "memory_limit": 50000,  # In MB --> max. 32 GB + 20GB Swap
                              # Interesting parameters:
                              # "rand_prob": 0.5, #specifies probability to sample randomly instead of opt. acq. function
-                             "limit_resources": self.limit_resources,  # Do not use pynisher to cancel a run
+                             "limit_resources": False,
+                             #"limit_resources": self.limit_resources,
+                                 #self.limit_resources,  # Do not use pynisher to cancel a run
                              # Activate this to "true" for baselines AML4C, not for our approach!!!
                              # I think this also leads to problems for Spectral clustering running forever?
                              })
@@ -347,7 +349,20 @@ class SMACOptimizer(AbstractOptimizer):
 OPT_ABBREVS = {SMACOptimizer.get_name(): "BO"}
 
 if __name__ == '__main__':
+    ml2dac_ec = pd.read_csv("../MetaKnowledgeRepository/evaluated_configs.csv")
+    effens_ec = pd.read_csv("../../effens/EffEnsMKR/evaluated_ensemble.csv")
+
+    effens_datasets = effens_ec["dataset"].unique()
+    ml_datasets = ml2dac_ec["dataset"].unique()
+    diff = []
+    for data in ml_datasets:
+        if data not in effens_datasets:
+            diff.append(data)
+    print(diff)
+    exit()
     cs = build_config_space([HIERARCHICAL_CLUSTERING_ALGORITHM])
     X, y = make_moons(n_samples=1000)
     opt = SMACOptimizer(cs=cs, dataset=X, cvi=CVICollection.CALINSKI_HARABASZ, n_loops=10)
     opt.optimize()
+
+
