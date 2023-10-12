@@ -213,7 +213,7 @@ class SMACOptimizer(AbstractOptimizer):
                              "memory_limit": 50000,  # In MB --> max. 32 GB + 20GB Swap
                              # Interesting parameters:
                              # "rand_prob": 0.5, #specifies probability to sample randomly instead of opt. acq. function
-                             "limit_resources": False,
+                             #"limit_resources": True,
                              #"limit_resources": self.limit_resources,
                                  #self.limit_resources,  # Do not use pynisher to cancel a run
                              # Activate this to "true" for baselines AML4C, not for our approach!!!

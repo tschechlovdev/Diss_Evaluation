@@ -11,6 +11,8 @@ from sklearn.cluster import KMeans, MiniBatchKMeans, AgglomerativeClustering, Bi
     MeanShift, estimate_bandwidth, AffinityPropagation
 from sklearn.mixture import GaussianMixture
 
+from automlclustering.Helper.RAMManager import memory
+
 
 def execute_algorithm_from_config(X: np.array, config: Configuration, run_complete_algorithm=False):
     algo_instance = ALGORITHMS_MAP[config["algorithm"]]
@@ -36,6 +38,7 @@ class ClusteringAlgorithm:
         self.algorithm_class = algorithm_class
         self.additional_kwargs = additional_kwargs
 
+    @memory(percentage=1.8)
     def execute_config(self, X, configuration: Configuration, run_complete_algorithm=False):
         config_dict = configuration.get_dictionary().copy()
 

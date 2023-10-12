@@ -1,5 +1,6 @@
 import time
 
+import numpy as np
 from pympler.tracker import SummaryTracker
 
 from automlclustering.ClusterValidityIndices.CVIHandler import CVICollection, CVIType
@@ -19,8 +20,15 @@ def smac_function(config, optimizer_instance, **kwargs):
 
     clust_algo_instance = ClusteringCS.ALGORITHMS_MAP[algorithm_name]
     print(f"Executing Configuration: {config}")
+
     # Execute clustering algorithm
-    y = clust_algo_instance.execute_config(X, config)
+    try:
+        y = clust_algo_instance.execute_config(X, config)
+    except MemoryError as e:
+        print(f"Error: {e}")
+        print(f"Setting labels to one single array!")
+        y = np.ones(X.shape(0))
+
     # store additional info, such as algo and cvi runtime, and the predicted clustering labels
     algo_runtime = time.time() - t0
     print(f"Executed {str(config)}, took {algo_runtime}s")
@@ -29,7 +37,13 @@ def smac_function(config, optimizer_instance, **kwargs):
     cvi_start = time.time()
     # Scoring cvi, true_labels are none for internal CVI. We only use them for consistency.
     # We only want the true_labels in the learning phase, where we optimize an external CVI.
-    score = cvi.score_cvi(X, labels=y, true_labels=true_labels)
+    try:
+        score = cvi.score_cvi(X, labels=y, true_labels=true_labels)
+    except MemoryError as e:
+        print(f"Error: {e}")
+        print("Setting CVI score to NAN")
+        score = np.nan
+
     print(f"Obtained CVI score for {cvi.get_abbrev()}: {score}")
     cvi_runtime = time.time() - cvi_start
     print(f"Finished {cvi.get_abbrev()}, took {cvi_runtime}s")

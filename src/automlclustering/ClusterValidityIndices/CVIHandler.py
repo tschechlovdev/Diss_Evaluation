@@ -6,6 +6,7 @@ from hdbscan import validity_index as dbcv_score
 from sklearn import metrics
 
 from automlclustering.ClusterValidityIndices import DunnIndex, CogginsJain, COP_Index
+from automlclustering.Helper.RAMManager import memory
 
 """
 Responsible for everything related to Cluster Validitiy Indices (CVIs).
@@ -54,8 +55,8 @@ class CVI:
     def get_abbrev(self):
         return CVICollection.CVI_ABBREVIATIONS[self.name]
 
+    @memory(percentage=1.8)
     def score_cvi(self, data, labels=None, true_labels=None):
-
         """
         Calculates the score of a cvi for a given dataset and the corresponding class labels. If the cvi is an
         external cvi, also the true_labels have to be passed to calculate the cvi. :param data: the raw dataset
@@ -71,7 +72,8 @@ class CVI:
             raise Exception("either labels or true_labels has to be set to get cvi score")
 
         # set default score to highest possible score --> Infinity will throw exception later on
-        score = 2147483647
+        # NEW: Just set nan!
+        score = np.nan
 
         logging.info("Start scoring cvi {}".format(self.name))
 
@@ -93,11 +95,12 @@ class CVI:
         else:
             logging.error("There was an unknown cvi type which couldn't be calculated. The cvi is " + self.name)
 
-        if math.isnan(score):
-            logging.info("Scored cvi {} and value is NAN. Returning 2147483647 as value".format(self.name))
-            return 2147483647
+        # if math.isnan(score):
+        #     logging.info("Scored cvi {} and value is NAN. "
+        #                  "Returning 2147483647 as value".format(self.name))
+        #     return 2147483647
 
-        if self.cvi_objective == MetricObjective.MAXIMIZE:
+        if self.cvi_objective == MetricObjective.MAXIMIZE and not math.isnan(score):
             score = -1 * score
 
         logging.info("Scored cvi {} and value is {}".format(self.name, score))
@@ -122,16 +125,16 @@ def density_based_score(X, labels):
     print(X.shape)
 
     # Does not work for MNIST with n=40k (784 features)
-    if X.shape[0] >= 40000 and X.shape[1] >= 100:
-        print(f"Cannot process data with shape {X.shape}")
-        print(f"Return default value {2147483647}")
-        return 2147483647
+    # if X.shape[0] >= 40000 and X.shape[1] >= 100:
+    #     print(f"Cannot process data with shape {X.shape}")
+    #     print(f"Return default value {2147483647}")
+    #     return 2147483647
 
     try:
         return dbcv_score(X, labels)
     except ValueError as ve:
         logging.error(f"Error occured: {ve}")
-        return -1.0
+        return np.nan
 
 
 class MLPCVI(CVI):

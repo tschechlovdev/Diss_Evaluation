@@ -42,6 +42,7 @@ def clean_up_optimizer_directory(optimizer_instance):
         shutil.rmtree(optimizer_instance.output_dir)
 
 
+
 def process_result_to_dataframe(optimizer_result, additional_info, ground_truth_clustering):
     selected_cvi = additional_info["cvi"]
     # The result of the application phase an optimizer instance that holds the history of executed
