@@ -2,6 +2,7 @@ import time
 
 import numpy as np
 from ConfigSpace import ConfigurationSpace, Configuration
+from RAMManager import memory
 from smac.facade.smac_hpo_facade import SMAC4HPO
 
 from effens.ConsensusCS.ConsensusCS import execute_consensus_clustering, build_consensus_cs, CC_FUNCTIONS
@@ -34,7 +35,7 @@ class ConsensusOptimizer(SMACOptimizer):
         # Don't do this for our approach -> Gets some strange behaviour
         self.limit_resources = False
 
-
+@memory(percentage=1.8)
 def consensus_smac_function(config: Configuration, optimizer_instance: ConsensusOptimizer, **kwargs):
     print("---------------------------------")
     print(f"-------------Running iteration={optimizer_instance.iteration}---------")
@@ -62,18 +63,28 @@ def consensus_smac_function(config: Configuration, optimizer_instance: Consensus
 
     print(f"Executing CF={cc_function}(m={ensemble_size}) with k={k}")
     cc_start = time.time()
-    y_cons, err = execute_consensus_clustering(cc_name=cc_function, Y=selected_ensemble, k_out=k)
+    try:
+        y_cons, err = execute_consensus_clustering(cc_name=cc_function, Y=selected_ensemble, k_out=k)
+    except MemoryError as e:
+        print(f"Error: {e}")
+        y_cons = np.ones(selected_ensemble.shape[0])
+        err = e
     cc_runtime = time.time() - cc_start
     print(f"Finished {cc_function}, took {cc_runtime}s")
 
     print(f"Executing cvi:  {cvi.get_abbrev()}")
     cvi_start = time.time()
-    if cvi.cvi_type == CVIType.INTERNAL:
-        score = cvi.score_cvi(X, y_cons)
-    elif cvi.cvi_type == CVIType.EXTERNAL:
-        score = cvi.score_cvi(data=None, true_labels=optimizer_instance.true_labels, labels=y_cons)
-    else:
-        raise ValueError(f"Unknown cvi type for cvi: {cvi}")
+    try:
+        if cvi.cvi_type == CVIType.INTERNAL:
+            score = cvi.score_cvi(X, y_cons)
+        elif cvi.cvi_type == CVIType.EXTERNAL:
+            score = cvi.score_cvi(data=None, true_labels=optimizer_instance.true_labels, labels=y_cons)
+        else:
+            raise ValueError(f"Unknown cvi type for cvi: {cvi}")
+    except MemoryError as e:
+        print(f"Error: {e}")
+        score = np.nan
+
     cvi_runtime = time.time() - cvi_start
     print(f"Finished {cvi.get_abbrev()}, took {cvi_runtime}s")
 

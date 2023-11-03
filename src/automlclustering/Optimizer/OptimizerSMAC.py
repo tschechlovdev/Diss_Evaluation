@@ -3,22 +3,19 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import List, Dict, Union, Type
+from typing import List, Dict, Union
 
 import numpy as np
 import pandas as pd
 from ConfigSpace.configuration_space import Configuration, ConfigurationSpace
-from sklearn.datasets import make_blobs, make_moons
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 from smac.facade.smac_ac_facade import SMAC4AC
 from smac.facade.smac_hpo_facade import SMAC4HPO
-from smac.initial_design.sobol_design import SobolDesign
 from smac.scenario.scenario import Scenario
 
-from automlclustering.ClusteringCS.ClusteringCS import CONFIG_SPACE_MAPPING, build_kmeans_space, build_paramter_space_per_algorithm, \
-    AFFINITY_PROPAGATION_ALGORITHM, build_config_space, SPECTRAL_ALGORITHM, HIERARCHICAL_CLUSTERING_ALGORITHM
 from automlclustering.ClusterValidityIndices import CVIHandler
 from automlclustering.ClusterValidityIndices.CVIHandler import CVICollection, CVI
+from automlclustering.ClusteringCS.ClusteringCS import CONFIG_SPACE_MAPPING, build_kmeans_space
 from automlclustering.Optimizer.smac_function_ import smac_function
 
 

@@ -16,7 +16,8 @@ from automlclustering.ClusteringCS import ClusteringCS
 from automlclustering.MetaLearningExperiments import DataGeneration
 from automlclustering.MetaLearning import LearningPhase
 from automlclustering.MetaLearning import MetaFeatureExtractor
-from automlclustering.MetaLearning.MetaFeatureExtractor import load_kdtree, query_kdtree, extract_meta_features
+from automlclustering.MetaLearning.MetaFeatureExtractor import load_kdtree, query_kdtree, extract_meta_features, \
+    create_kd_tree
 from automlclustering.Optimizer.OptimizerSMAC import SMACOptimizer
 from automlclustering.Helper import Helper
 from automlclustering.Helper.Helper import mf_set_to_string
@@ -56,8 +57,9 @@ class ML2DAC:
                              "on the warmstarting configurations. Either use n_warmstarts > 0 or set limit_cs=False.")
 
     def find_similar_dataset(self, meta_features, dataset_name, n_similar_datasets=1):
-        # Load kdtree --> Used to find similar dataset more efficiently
-        tree = load_kdtree(path=self.mkr_path / "meta_features", mf_set=self.mf_set)
+        # Create kdtree --> Used to find similar dataset more efficiently
+        mfs_mkr = self.mf_df.drop("dataset", axis=1).to_numpy()
+        tree = create_kd_tree(mfs_mkr)
 
         # Find nearest neighbors, i.e., datasets in this case
         dists, inds = query_kdtree(meta_features, tree)
@@ -217,6 +219,12 @@ class ML2DAC:
             # update warmstart configurations
             warmstart_configs = warmstart_configs["config"]
             warmstart_configs = [ast.literal_eval(config_string) for config_string in warmstart_configs]
+            # If DBSCAN is in warmstart configurations, we may have to adjust the eps paramater
+            # The eps bounds are dependent on the data set size
+            upper_eps_bound = ClusteringCS._get_eps_upperbound(X_shape=X.shape)
+            for config in warmstart_configs:
+                if "eps" in config.keys():
+                    config["eps"] = min(upper_eps_bound, config["eps"])
             warmstart_configs = [Configuration(cs, config_dict) for config_dict in warmstart_configs]
 
         additional_result_info["algorithms"] = algorithms

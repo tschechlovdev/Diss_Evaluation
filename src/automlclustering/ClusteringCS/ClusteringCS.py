@@ -107,7 +107,7 @@ AFFINITY_PROPAGATION_ALGORITHM = "affinity_propagation"
 algorithms = [KMEANS_ALGORITHM, GMM_ALGORITHM,
               # KMEDOIDS,
               MINI_BATCH_KMEANS, HIERARCHICAL_CLUSTERING_ALGORITHM, DBSCAN_ALGORITHM, BIRCH_ALGORITHM,
-              SPECTRAL_ALGORITHM,# MEAN_SHIFT_ALGORITHM,
+              SPECTRAL_ALGORITHM,  # MEAN_SHIFT_ALGORITHM,
               AFFINITY_PROPAGATION_ALGORITHM]
 
 k_range = (2, 100)
@@ -215,10 +215,15 @@ ALGORITHMS_MAP = {KMEANS_ALGORITHM: ClusteringAlgorithm(name=KMEANS_ALGORITHM, a
                   }
 
 
-def _set_eps_hyperparameter(X_shape):
+def _get_eps_upperbound(X_shape):
     max_values = np.ones(X_shape[1])
     min_values = np.zeros(X_shape[1])
     upper_eps_bound = np.linalg.norm(max_values - min_values)
+    return upper_eps_bound
+
+
+def _set_eps_hyperparameter(X_shape):
+    upper_eps_bound = _get_eps_upperbound(X_shape)
     ALGORITHMS_MAP[DBSCAN_ALGORITHM].parameters[0] = UniformFloatHyperparameter("eps", lower=eps_range[0],
                                                                                 upper=upper_eps_bound)
 

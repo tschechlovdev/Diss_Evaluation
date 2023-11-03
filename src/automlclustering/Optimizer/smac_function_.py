@@ -21,6 +21,7 @@ def smac_function(config, optimizer_instance, **kwargs):
     clust_algo_instance = ClusteringCS.ALGORITHMS_MAP[algorithm_name]
     print(f"Executing Configuration: {config}")
 
+    e = None
     # Execute clustering algorithm
     try:
         y = clust_algo_instance.execute_config(X, config)
@@ -47,7 +48,7 @@ def smac_function(config, optimizer_instance, **kwargs):
     print(f"Obtained CVI score for {cvi.get_abbrev()}: {score}")
     cvi_runtime = time.time() - cvi_start
     print(f"Finished {cvi.get_abbrev()}, took {cvi_runtime}s")
-    add_info = {"algo_time": algo_runtime, "metric_time": cvi_runtime, "labels": y.tolist()}
+    add_info = {"algo_time": algo_runtime, "metric_time": cvi_runtime, "labels": y.tolist(), "error": e}
 
     # TODO: Just return results for our experiments
     if optimizer_instance.cvi.cvi_type == CVIType.INTERNAL:

@@ -6,15 +6,13 @@ import numpy as np
 import pandas as pd
 
 from automlclustering.ClusterValidityIndices.CVIHandler import CVICollection
-from ConsensusCS.ConsensusCS import CC_function_mapping
-from EnsMetaLearning.EffEns import EffEns
-from Utils.Utils import process_result_to_dataframe, \
-    clean_up_optimizer_directory, get_n_from_real_world_data, calculate_gen_info
-from EnsMetaLearning import MetaFeatureExtractor
-from Utils.Utils import path_to_eval_results
+from effens.ConsensusCS.ConsensusCS import CC_function_mapping
+from effens.EnsMetaLearning.EffEns import EffEns
+from effens.Utils.Utils import process_result_to_dataframe, \
+    clean_up_optimizer_directory, get_n_from_real_world_data, calculate_gen_info, path_to_eval_results
+from effens.EnsMetaLearning import MetaFeatureExtractor
 
 warnings.filterwarnings(action="ignore")
-
 
 runs = list(range(10))
 n_estimators = 1000
@@ -29,7 +27,7 @@ for run in runs:
     ##############################################################
     ##############################################################
     ##### Application Phase
-    #result_file_name = f"/home/ubuntu/automated_consensus_clustering/automated_consensus/src/EnsMetaLearning/real_world_cf_es_m_pred_run{run}.csv"
+    # result_file_name = f"/home/ubuntu/automated_consensus_clustering/automated_consensus/src/EnsMetaLearning/real_world_cf_es_m_pred_run{run}.csv"
     result_file_name = path_to_eval_results / "real_world"
     result_file_name.mkdir(parents=True, exist_ok=True)
     result_file_name = result_file_name / f"real_world_cf_es_m_pred_run{run}.csv"

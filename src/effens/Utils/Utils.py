@@ -8,7 +8,6 @@ import shutil
 
 path_to_eval_results = Path("../../../eval_results")
 path_to_eval_results.mkdir(exist_ok=True, parents=True)
-print(str(path_to_eval_results))
 
 
 def compute_ari_values(optimizer_result_df, ground_truth_labels):
@@ -40,7 +39,6 @@ def compute_nmi_values(optimizer_result_df, ground_truth_labels):
 def clean_up_optimizer_directory(optimizer_instance):
     if os.path.exists(optimizer_instance.output_dir) and os.path.isdir(optimizer_instance.output_dir):
         shutil.rmtree(optimizer_instance.output_dir)
-
 
 
 def process_result_to_dataframe(optimizer_result, additional_info, ground_truth_clustering):

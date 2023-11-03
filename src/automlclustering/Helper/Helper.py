@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import BallTree
@@ -131,3 +132,8 @@ def _add_iteration_metric_wallclock_time(optimizer_result_df, selected_cvi):
     optimizer_result_df = optimizer_result_df[optimizer_result_df[selected_cvi]
                                               == optimizer_result_df['CVI score']]
     return optimizer_result_df
+
+
+def create_paths(paths: [Path]):
+    for path in paths:
+        path.mkdir(exists_ok=True, parents=True)
