@@ -175,10 +175,10 @@ class ApproachExecuter:
                     print(f"Continue for dataset {dataset}")
                     continue
 
-                if n > 10000 and "Fashion-MNIST" in dataset:
-                    print(f"Continue for {n} > 10k for F-MNIST dataset for now!")
-                    print(f"Continue for {dataset}")
-                    continue
+                # if n > 30000 and "Fashion-MNIST" in dataset:
+                #     print(f"Continue for {n} > 10k for F-MNIST dataset for now!")
+                #     print(f"Continue for {dataset}")
+                #     continue
 
                 cvi, cvis_ordered = self.predict_cvi(X, rs)
 

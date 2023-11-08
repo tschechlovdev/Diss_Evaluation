@@ -39,10 +39,13 @@ if __name__ == '__main__':
     eval_training_sets = [
         ["gaussian"],
         ["varied"],
+        #["moons"],
+        #["circles"],
         ["moons", "circles"],
         ["gaussian", "varied"],
         ["gaussian", "moons", "circles"],
         ["varied", "moons", "circles"],
+        ["gaussian", "varied", "moons", "circles"],
     ]
 
     ml2dac_mkr_path = Path("../automlclustering/MetaKnowledgeRepository")
