@@ -15,6 +15,7 @@ from sklearn.cluster import MeanShift
 from sklearn.neighbors._kd_tree import KDTree
 
 from automlclustering.Helper.Helper import mf_set_to_string, hopkins
+from automlclustering.Helper.RAMManager import memory
 
 logging.basicConfig(filename='metafeatures.log',
                     level=logging.INFO,
@@ -75,7 +76,7 @@ def extract_landmarking(X, mf_set):
         names.append(metric.get_abbrev())
     return names, scores
 
-
+@memory(percentage=1.5)
 def extract_meta_features(dataset, mf_set):
     if mf_set in pymfe_mfs:
         names, metafeatures = extract_pymfe(dataset, mf_set)

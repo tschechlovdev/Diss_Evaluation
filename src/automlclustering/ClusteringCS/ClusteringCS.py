@@ -38,7 +38,7 @@ class ClusteringAlgorithm:
         self.algorithm_class = algorithm_class
         self.additional_kwargs = additional_kwargs
 
-    @memory(percentage=1.8)
+    @memory(percentage=1.5)
     def execute_config(self, X, configuration: Configuration, run_complete_algorithm=False):
         config_dict = configuration.get_dictionary().copy()
 

@@ -33,8 +33,8 @@ pymfe_mfs = [
     ["info-theory", "general"],
 ]
 
-landmarking_mfs =[
-   # AutoClust: Meanshift
+landmarking_mfs = [
+    # AutoClust: Meanshift
     "autoclust",
 ]
 
@@ -96,10 +96,10 @@ def extract_meta_features(dataset, mf_set):
     return names, metafeatures
 
 
-def extract_all_datasets(datasets, path=Path(''), mf_Set='statistical', d_names=[], save_metafeatures=True):
-    default_mfe_mfs = []
-    t0 = time.time()
-
+def extract_all_datasets(datasets, path=Path(''),
+                         mf_Set='statistical',
+                         d_names=[],
+                         save_metafeatures=True):
     # contains a list of dictionary. Each dictionary contains the dataset and the corresponding meta-feature
     # names as keys and the values as value
     meta_features_per_dataset = []
@@ -109,11 +109,15 @@ def extract_all_datasets(datasets, path=Path(''), mf_Set='statistical', d_names=
     else:
         df = pd.DataFrame()
     print(df)
+
     for X, d_name in zip(datasets, d_names):
         if len(df) > 0 and d_name in df["dataset"].unique():
             print(f"Meta-features for {d_name} already extracted - continue!")
             print(df[df["dataset"] == d_name])
             continue
+        else:
+            print(f"Dataset {d_name} not in df")
+
         print(f"extracting metafeatures {mf_Set} from dataset {d_name}")
         names, scores = extract_meta_features(X, mf_Set)
         dic = dict(zip(names, scores))
@@ -124,7 +128,6 @@ def extract_all_datasets(datasets, path=Path(''), mf_Set='statistical', d_names=
         df = pd.concat([df, pd.DataFrame(dic)])
 
         if save_metafeatures:
-            df = pd.DataFrame(meta_features_per_dataset)
             path.mkdir(exist_ok=True)
             df.to_csv(path / f'{mf_set_to_string(mf_Set)}_metafeatures.csv', index=False)
 
@@ -139,7 +142,7 @@ def extract_all_datasets(datasets, path=Path(''), mf_Set='statistical', d_names=
     return default_mfe_mfs
 
 
-def load_kdtree(path =Path(""), mf_set='statistical'):
+def load_kdtree(path=Path(""), mf_set='statistical'):
     try:
         with open(f'{path / mf_set_to_string(mf_set)}_kdtree.pkl', 'rb') as file:
             return pickle.load(file)
@@ -150,6 +153,7 @@ def load_kdtree(path =Path(""), mf_set='statistical'):
         meta_features = mfs.iloc[:, :-1].to_numpy()
         tree = KDTree(meta_features, metric="manhattan")
         return tree
+
 
 def query_kdtree(meta_features, tree, k=1):
     meta_features = np.array(meta_features)
@@ -182,7 +186,8 @@ def calculate_clustering_mfs(dataset):
     opt_model.fit(dataset)
     reachability = max(opt_model.reachability_[np.where(opt_model.reachability_ != np.inf)])
     core_distance = max(opt_model.core_distances_)
-    return ["compactness", "n_leaves", "reachability", "core dist"],[compactness, n_leaves, reachability, core_distance]
+    return ["compactness", "n_leaves", "reachability", "core dist"], [compactness, n_leaves, reachability,
+                                                                      core_distance]
 
 
 def extract_autocluster_mfes(dataset):

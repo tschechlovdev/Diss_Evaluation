@@ -21,7 +21,7 @@ def smac_function(config, optimizer_instance, **kwargs):
     clust_algo_instance = ClusteringCS.ALGORITHMS_MAP[algorithm_name]
     print(f"Executing Configuration: {config}")
 
-    e = None
+    e = ""
     # Execute clustering algorithm
     try:
         y = clust_algo_instance.execute_config(X, config)
