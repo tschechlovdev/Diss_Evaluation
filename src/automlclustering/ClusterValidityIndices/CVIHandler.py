@@ -55,7 +55,7 @@ class CVI:
     def get_abbrev(self):
         return CVICollection.CVI_ABBREVIATIONS[self.name]
 
-    @memory(percentage=1.8)
+    @memory(percentage=1.5)
     def score_cvi(self, data, labels=None, true_labels=None):
         """
         Calculates the score of a cvi for a given dataset and the corresponding class labels. If the cvi is an
@@ -106,24 +106,14 @@ class CVI:
         logging.info("Scored cvi {} and value is {}".format(self.name, score))
         return score
 
-
+@memory(percentage=1.5)
 def dunn_score(X, labels):
     #### Taken from https://github.com/jqmviegas/jqm_cvi/blob/master/jqmcvi/base.py####
     return DunnIndex.dunn_fast(X, labels)
 
 
+@memory(percentage=1.5)
 def density_based_score(X, labels):
-    try:
-        np.ones((X.shape[0], X.shape[0]))
-    except MemoryError as e:
-        print(f"Catching memory error for data with shape {X.shape}")
-        print(f"Cannot create matrix with shape {(X.shape[0], X.shape[0])}")
-        print(e)
-        # Memory Error Code
-        return 2
-
-    print(X.shape)
-
     # Does not work for MNIST with n=40k (784 features)
     # if X.shape[0] >= 40000 and X.shape[1] >= 100:
     #     print(f"Cannot process data with shape {X.shape}")
@@ -150,9 +140,17 @@ class MLPCVI(CVI):
 
         # calculate all internal cvis
         for cvi in CVICollection.internal_cvis:
-            cvi_score = cvi.score_cvi(data, labels)
+            if data.shape[0] > 20000 and ((cvi.name == CVICollection.DENSITY_BASED_VALIDATION.name)
+                                          or (cvi.name == CVICollection.DUNN_INDEX.name)):
+                cvi_score = np.nan
+            else:
+                try:
+                    cvi_score = cvi.score_cvi(data, labels)
+                except MemoryError as e:
+                    print(e)
+                    cvi_score = np.nan
             print(f"cvi score for {cvi.name} is: {cvi_score}")
-            if math.isnan(cvi_score) or math.isinf(cvi_score):
+            if np.isnan(cvi_score) or np.isinf(cvi_score):
                 cvi_score = 2147483647
             cvi_scores.append(cvi_score)
         cvi_scores = np.array(cvi_scores).reshape(1, -1)

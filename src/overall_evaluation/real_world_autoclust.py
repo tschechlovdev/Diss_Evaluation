@@ -76,24 +76,28 @@ for run in range(10):
     rs = random_state * run
 
     # values of CVIs
-    cvi_X = eval_configs[cvi_list].fillna(0).to_numpy()
+    cvi_X = eval_configs[cvi_list].fillna(2147483647).to_numpy()
     cvi_y = eval_configs["AMI"]
+    cvi_y = cvi_y.apply(lambda x: 1 if x > 1 else x)
 
     # Create and train MLP model
     mlp_model = MLPRegressor(random_state=random_state,
                              # Parameters from AutoClust paper
-                             solver="adam", max_iter=100,
-                             activation="relu", hidden_layer_sizes=(60, 30, 10)
+                             solver="adam",
+                             max_iter=100,
+                             activation="relu",
+                             hidden_layer_sizes=(60, 30, 10)
                              )
     mlp_model.fit(cvi_X, cvi_y)
 
+    print(f"Range of AMI values: {cvi_y.max()} - {cvi_y.min()}")
     print(mlp_model)
     print(mlp_model.predict(cvi_X[0:10]))
     print(cvi_y[0:10])
     mlp_cvi = MLPCVI(mlp_model=mlp_model)
 
-    for mf_set in [MetaFeatureExtractor.meta_feature_sets[5],
-                   "autoclust"]:
+    for mf_set in [  # MetaFeatureExtractor.meta_feature_sets[5],
+        "autoclust"]:
         training_mfs = pd.read_csv(f"./baseline_mfs/{mf_set_to_string(mf_set)}_metafeatures.csv")
         print(training_mfs.to_numpy()[0].shape[0])
         for dataset in real_world_datasets:
@@ -111,7 +115,8 @@ for run in range(10):
             if mf_set == "autoclust":
                 cvis = [mlp_cvi]
             else:
-                cvis = [CVICollection.DENSITY_BASED_VALIDATION, CVICollection.COP_SCORE]
+                cvis = [CVICollection.DENSITY_BASED_VALIDATION,
+                        CVICollection.COP_SCORE]
 
             for cvi in cvis:
                 method = f"AS->HPO ({mf_set_to_string(mf_set)}) - {cvi.get_abbrev()}"
@@ -131,7 +136,9 @@ for run in range(10):
                 if mf_set == "autoclust" and X.shape[0] > 20000:
                     print(f"Continue AutoClust for now!")
                     print("We are setting default values as meanshift will not execute!")
-                    test_mfs_values = np.zeros(training_mfs.drop("dataset", axis=1).to_numpy()[0].shape[0])
+                    test_mfs_values = np.full(training_mfs.drop("dataset", axis=1).to_numpy()[0].shape[0],
+                                              2147483647)
+
                 else:
                     mfs, test_mfs_values = MetaFeatureExtractor.extract_meta_features(X, mf_set)
 
@@ -154,7 +161,7 @@ for run in range(10):
                                           cvi=cvi,
                                           cs=cs,
                                           n_loops=n_loops,
-                                          wallclock_limit=240 * 60,
+                                          wallclock_limit=360 * 60,
                                           seed=random_state,
                                           limit_resources=False
                                           )

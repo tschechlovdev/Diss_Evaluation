@@ -2,6 +2,7 @@
 import time
 
 import numpy as np
+from RAMManager import memory
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics.pairwise import euclidean_distances
 
@@ -74,7 +75,7 @@ def diameter(labels, distances, method='farthest'):
                     diameters[labels[i]] = distances[i, ii]
     return diameters
 
-
+@memory(percentage=1.5)
 def dunn(labels, distances, diameter_method='mean_cluster',
          cdist_method='nearest'):
     """

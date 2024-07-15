@@ -91,7 +91,8 @@ group_imbalance = [0, 0.25, 0.5, 0.75, 1]
 taxonomies = {}
 for n_c in n_clusters:
     np.random.seed(0)
-    taxonomies[n_c] = generate_taxonomy(min_lvl=3, max_lvl=3, n_clusters=n_c, engine_perc=0)
+    taxonomies[n_c] = generate_taxonomy(min_lvl=3, max_lvl=3,
+                                        n_clusters=n_c, engine_perc=0)
 
 # %%
 # generate datasets with specified parameters
@@ -103,12 +104,18 @@ for n_c in n_clusters:
             import copy
 
             taxonomy = copy.deepcopy(taxonomy_t)
-            generator = Generator(root=taxonomy, n=n_instances, c=30, n_features=n_f, gs=0.5, sG=group_imbalance[i])
+            generator = Generator(root=taxonomy, n=n_instances, c=30,
+                                  n_features=n_f,
+                                  gs=0.5,
+                                  sG=group_imbalance[i])
             df = generator.generate_data_from_taxonomy()
             df.to_csv(
                 generated_data_path / f"dataset{n_instances}_clusters{n_c}_features{n_f}_gs05_sg{str(group_imbalance[i]).replace('.', '')}.csv",
                 encoding='utf-8', index=False)
-            generator = Generator(root=taxonomy, n=n_instances, c=30, n_features=n_f, gs=group_separation[i], sG=1)
+            generator = Generator(root=taxonomy,
+                                  n=n_instances, c=30,
+                                  n_features=n_f,
+                                  gs=group_separation[i], sG=1)
             df = generator.generate_data_from_taxonomy()
             df.to_csv(
                 generated_data_path / f"dataset{n_instances}_clusters{n_c}_features{n_f}_gs{str(group_separation[i]).replace('.', '')}_sg1.csv",
