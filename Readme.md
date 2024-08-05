@@ -1,23 +1,15 @@
-# EffEns: Efficient Ensemble Clustering using Meta-Learning and Optimization Techniques
+# Democratizing Clustering Analyses: AutoML, Meta-Learning, and Ensemble Clustering to Support Novice Analysts
 
-Prototypical Implementation in Python of the submitted Paper "EffEns: Efficient Ensemble Clustering using Meta-Learning and Optimization Techniques" at SIGMOD 2024.
-In the following, we provide an overview of the code structure, an installation instruction and, an example on how to use EffEns.
+Prototypical Implementation in Python of the submitted Dissertation "Democratizing Clustering Analyses: AutoML, Meta-Learning, and Ensemble Clustering to Support Novice Analysts" at the University of Stuttgart.
 
 ## Overview
 
 The main code is in the "src" folder. It contains the following modules:
 
-- ``automlclustering``: Contains the adapted code from AutoML4Clust [1] and ML2DAC [2], which provide 
-    implementations of AutoML for Clustering Systems and for different meta-feature sets.
-- ``consensus_functions``: Contains implementations of the five consensus functions "ABV", "ACV", "MLCA", "MM", and "QMI", which we used in our paper.
-- ``ConsensusCS``: Provides the consensus functions and hyperparameters as configuration space for the optimizer.
-- ``EffEnsMKR``: Contains a script that stores the path to the MKR and the filenames of the "evaluated ensembles" and the meta-features.
-- ``EnsMetaLearning``: All functionality for our meta-learning procedure. In particular, for the learning phase to evalued different ensemble subsets and extract the meta-features.
-    It also contains ``EffEns`` that can be applied on new datasets.
-- ``EnsOptimizer``: Contains the optimizer that we use for hyperparameter optimization of the consensus functions. 
-  We use SMAC as optimizer and provide a wrapper class as well as the black box function for optimization.
-- ``Experiments``: Contains the code for the experiments for the synthetic and real-world dataets of our paper (cf. Section 7).
-- ``Utils``: Contains some utility code such as functions to process the optimizer results or to clean up temporary directories.
+- ``automlclustering``: Contains the code for AutoML4Clust [1] (Chapter 3) and ML2DAC [2] (Chapter 4).
+- ``effens``: Code for EffEns - Efficient Ensemble Clustering [3] (Chapter 5).
+- ``overall_evaluation``: Code for the overall evaluation and comparison of the three approaches AutoML4Clust, ML2DAC, and EffEns (Chapter 6).
+- ``datagen_classification``: Code for the data generator and the subsequent evaluation of the three clustering approaches for subsequent classification [4] (Chapter 7).
 
 ## Installation
 
@@ -51,24 +43,12 @@ or anaconda instead of miniconda.
 Now everything should be setup and you can try to run ``python src/Experiments/SyntehticData/EffEns_Experiment_synthetic.py``.
 This should run without any errors.
 
-## Examples
-
-```Python
-from sklearn.datasets import make_blobs
-from effens.EnsMetaLearning import EffEns
-from automlclustering.ClusterValidityIndices import CVIHandler
-
-X,y = make_blobs()
-effens = EffEns()
-
-result = effens.apply_ensemble_clustering(X, cvi=CVIHandler.CVICollection.CALINSKI_HARABASZ, n_loops=5)
-print(result)
-```
-
 ## References
 
-[1] Dennis Tschechlov, Manuel Fritz, Holger Schwarz:
-"AutoML4Clust: Efficient AutoML for Clustering Analyses". In: EDBT, 2021.
+[1] Fritz, M., Tschechlov, D.,& Schwarz, H. (2021). Efficient Exploratory  Clustering Analyses with Qualitative Approximations. Extending  Database Technology (EDBT), 337–342.
 
+[2] Treder-Tschechlov, D., Fritz, M., Schwarz, H., & Mitschang, B. (2023).  ML2DAC: Meta-Learning to Democratize AutoML for Clustering Analysis.  Proceedings of the ACM on Management of Data (PACMMOD),  1(2), 1–26.
 
-[2] Dennis Treder-Tschechlov, Manuel Fritz, Holger Schwarz, Bernhard Mitschang: "ML2DAC: Meta-Learning to Democratize AutoML for Clustering Analysis". In: Proc. ACM Manag. Data 1(2), 2023.
+[3] Treder-Tschechlov, D., Fritz, M., Schwarz, H., & Mitschang, B. (2024).  Efficient Ensemble Clustering based on Meta-Learning and Hyperparameter  Optimization. In: To appear in Proc. VLDB Endow. 17, 11.
+
+[4] Treder-Tschechlov, D., Reimann, P., Schwarz, H., & Mitschang, B. (2023). Approach to synthetic data generation for imbalanced multiclass  problems with heterogeneous groups. In: BTW 2023.
