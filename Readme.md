@@ -1,4 +1,4 @@
-# Overall Evaluation
+# Overall Evaluation of Democratizing Clustering Analyses: AutoML, Meta-Learning, and Ensemble Clustering to Support Novice Analysts
 
 Prototypical Implementation in Python of the submitted Dissertation "Democratizing Clustering Analyses: AutoML, Meta-Learning, and Ensemble Clustering to Support Novice Analysts" at the University of Stuttgart.
 
